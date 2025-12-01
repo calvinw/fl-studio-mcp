@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fl-studio-mcp"
+version = "0.1.0"
+description = "FastMCP server for FL Studio - LLM integration with piano roll and more"
+readme = "PIANO_ROLL_MCP_README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "fastmcp>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.uv]
+# Python version managed by uv venv

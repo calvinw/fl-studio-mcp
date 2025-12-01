@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+PIPFILE.lock
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Claude Code
+.claude/
+
+# FL Studio MCP Communication Files
+# Note: These are created dynamically in the FL Studio scripts directory
+# and should not be tracked in the repository
+mcp_request.json
+mcp_response.json
+piano_roll_state.json
+
+# MIDI test files (optional - remove these lines if you want to track .mid files)
+*.mid
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
