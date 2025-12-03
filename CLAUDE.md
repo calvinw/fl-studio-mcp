@@ -1,8 +1,8 @@
-# FL Studio MCP Bridge - Documentation
+# FL Studio Direct Integration - Documentation
 
 ## Overview
 
-This system allows Claude to interact with FL Studio's piano roll through an MCP (Model Context Protocol) server. It provides a bridge between Claude's AI capabilities and FL Studio's music production environment.
+This system allows Claude to interact with FL Studio's piano roll through direct file-based communication. It provides automatic, seamless integration between Claude's AI capabilities and FL Studio's music production environment.
 
 ## Getting Started (For AI Assistants)
 
@@ -22,11 +22,10 @@ If these aren't available, the MCP server needs to be started or reconnected.
 ### 2. Understand the User Workflow
 
 The user will:
-1. **Open the call_llm script** in FL Studio's piano roll (Tools → Scripting → call_llm)
-2. **Tell you what they want** (add chords, modify notes, create progressions, etc.)
-3. **You send requests** using the MCP tools
-4. **User clicks "Regenerate"** to preview your changes
-5. **User clicks "Accept"** to commit, or tells you to adjust
+1. **Run ComposeWithLLM** in FL Studio's piano roll (Tools → Scripting → ComposeWithLLM) ONCE to initialize
+2. **Start the auto-trigger watcher** (python fl_studio_auto_trigger.py) in a terminal
+3. **Tell you what they want** (add chords, modify notes, create progressions, etc.)
+4. **Notes appear automatically** - no buttons to click!
 
 ### 3. Always Start With State
 
@@ -43,11 +42,12 @@ This tells you:
 
 ### 4. Key Concepts for LLMs
 
-**Request Queue System:**
-- Requests accumulate in a JSON file
-- User previews ALL accumulated requests with "Regenerate"
-- Nothing happens in FL Studio until user clicks "Regenerate"
-- Multiple requests = multiple tool calls that stack up
+**Auto-Trigger System:**
+- Requests are written to `mcp_request.json`
+- Auto-trigger script watches for file changes
+- Automatically sends Cmd+Opt+Y (macOS) or Ctrl+Alt+Y (Windows/Linux)
+- FL Studio re-runs the last script (ComposeWithLLM)
+- Notes appear instantly (~0.5 seconds)
 
 **Time is Always in Quarter Notes:**
 - `time=0` = beat 1
@@ -89,7 +89,7 @@ mcp__fl-studio__send_notes([
     {"midi": 74, "duration": 4, "time": 8}
 ], mode="add")  # G major
 
-# Tell user: "Click Regenerate to preview the progression"
+# Notes will appear automatically!
 ```
 
 **Pattern: Modify existing notes**
@@ -106,7 +106,7 @@ mcp__fl-studio__delete_notes([{"midi": 67, "time": 0}])
 # Add replacement
 mcp__fl-studio__send_notes([{"midi": 69, "duration": 4, "time": 0}])
 
-# Tell user to Regenerate
+# Changes appear automatically!
 ```
 
 **Pattern: Start fresh**
@@ -124,16 +124,25 @@ mcp__fl-studio__send_notes([
     {"midi": 71, "duration": 0.5, "time": 3},   # B
     {"midi": 72, "duration": 0.5, "time": 3.5}  # C
 ], mode="replace")
+
+# Automatically clears old notes and adds new scale!
 ```
 
-**Pattern: User doesn't like the preview**
+**Pattern: User makes manual edits**
 ```python
-# User: "Actually, I don't like that. Start over."
+# User manually adds notes in FL Studio
 
-# Clear the queue
-mcp__fl-studio__clear_queue()
+# User: "I just added some notes manually"
 
-# Now send new requests
+# Remind user to refresh state
+# "Please press Cmd+Opt+Y (or Ctrl+Alt+Y) so I can see your changes"
+
+# User presses the key combo
+
+# Get updated state
+state = mcp__fl-studio__get_piano_roll_state()
+
+# Now you can see the manual edits
 ```
 
 ### 6. Important Rules for LLMs
@@ -142,22 +151,23 @@ mcp__fl-studio__clear_queue()
 - ✅ Always get state first with `get_piano_roll_state()`
 - ✅ Always specify `time` for every note (don't rely on defaults)
 - ✅ Use quarter notes for time and duration
-- ✅ Tell user to "Click Regenerate" after sending requests
+- ✅ Tell user notes will appear automatically
 - ✅ Use `mode="add"` by default (accumulate changes)
 - ✅ Use `mode="replace"` when user wants to start fresh
-- ✅ Offer to `clear_queue()` if user changes their mind
+- ✅ Remind user to press Cmd+Opt+Y after manual edits to refresh state
 
 **DON'T:**
-- ❌ Don't assume notes will appear without user clicking Regenerate
+- ❌ Don't tell user to click buttons (there are none in auto mode!)
 - ❌ Don't use ticks/PPQ directly - always use quarter notes
 - ❌ Don't forget to get state before making changes
-- ❌ Don't send requests without telling user what to do next
+- ❌ Don't assume you can see manual edits without state refresh
 
 ### 7. Troubleshooting for LLMs
 
 **User says "Nothing happened"**
-- Ask: "Did you click Regenerate in FL Studio?"
-- Requests queue up but don't apply until Regenerate is clicked
+- Ask: "Is the auto-trigger script running in the terminal?"
+- Ask: "Did you run ComposeWithLLM in FL Studio first?"
+- Suggest: "Try pressing Cmd+Opt+Y manually to refresh"
 
 **User says "It replaced everything"**
 - Check if you used `mode="replace"` accidentally
@@ -167,9 +177,8 @@ mcp__fl-studio__clear_queue()
 - Verify you're using quarter notes, not ticks
 - Remember: time=4 is beat 5, not beat 4 (counting starts at 0)
 
-**User wants to undo**
-- Use `clear_queue()` to discard pending changes
-- Or tell them to close the script without clicking Accept
+**User makes manual edits**
+- Remind them: "Press Cmd+Opt+Y to refresh the state so I can see your changes"
 
 ### 8. Musical Knowledge Tips
 
@@ -183,8 +192,9 @@ When helping with music:
 ### 9. Example Session
 
 ```
-User: "Open the script"
-[User opens call_llm in FL Studio]
+User: "Initialize FL Studio"
+[User runs ComposeWithLLM script]
+[User starts auto-trigger: python fl_studio_auto_trigger.py]
 
 User: "Add a sad chord progression"
 
@@ -197,18 +207,22 @@ You: Send Am - F - C - G progression
 > mcp__fl-studio__send_notes([...]) # C at time 8
 > mcp__fl-studio__send_notes([...]) # G at time 12
 
-You: "I've queued up a sad Am-F-C-G progression. Click Regenerate to preview!"
+You: "I've added a sad Am-F-C-G progression. Notes should appear automatically!"
+
+[Notes appear in FL Studio automatically! 🎵]
 
 User: "Great! Add a bass line"
 
 You: Send bass notes
 > mcp__fl-studio__send_notes([...]) # Bass notes at appropriate times
 
-You: "Added bass notes. Click Regenerate again to hear it with bass!"
+You: "Added bass notes!"
 
-User: "Perfect!" [Clicks Accept]
+[Bass notes appear automatically! 🎸]
 
-[Session done - user has committed the changes]
+User: "Perfect!"
+
+[Session done - all changes are live]
 ```
 
 ## Architecture
@@ -216,30 +230,42 @@ User: "Perfect!" [Clicks Accept]
 The system consists of three main components:
 
 1. **MCP Server** (`fl_studio_mcp_server.py`) - Provides tools for Claude to send musical requests
-2. **FL Studio Bridge Script** (`call_llm.pyscript`) - Runs inside FL Studio to process requests
-3. **JSON Communication Files** - Request queue and state files for communication
+2. **FL Studio Bridge Script** (`ComposeWithLLM.pyscript`) - Runs inside FL Studio to process requests automatically
+3. **Auto-Trigger Watcher** (`fl_studio_auto_trigger.py`) - Watches for changes and triggers FL Studio
+4. **JSON Communication Files** - Request queue and state files for communication
 
 ### Communication Flow
 
 ```
-Claude → MCP Server → Request Queue (JSON) → FL Studio Bridge → Piano Roll
+Claude → MCP Server → Request Queue (JSON) → Auto-Trigger Detects Change
+                                                      ↓
+                                           Sends Cmd+Opt+Y
+                                                      ↓
+                                           FL Studio Re-runs Script
+                                                      ↓
+                                           Notes Added to Piano Roll
                                                       ↓
                                            State Export (JSON)
 ```
 
 ## Workflow
 
-1. **Open call_llm script** (Tools → Scripting → call_llm) → Automatically:
+1. **Run ComposeWithLLM** (Tools → Scripting → ComposeWithLLM) → Once per session
    - Exports current piano roll state to `piano_roll_state.json`
    - Clears request queue (sets to `[]`)
+   - No dialog appears
 
-2. **Claude sends requests** → Accumulate in queue as list of actions
+2. **Start auto-trigger** → python fl_studio_auto_trigger.py
+   - Watches for changes to request queue
+   - Automatically triggers FL Studio when Claude sends notes
 
-3. **Click "Regenerate"** → Preview all accumulated changes
+3. **Claude sends requests** → Accumulate in queue as list of actions
 
-4. **Click "Accept"** → Commit changes and close dialog
+4. **Auto-trigger detects change** → Sends Cmd+Opt+Y to FL Studio
 
-5. **Repeat** - Open script again to start fresh
+5. **FL Studio re-runs script** → Processes queue and updates state
+
+6. **Notes appear** → Instantly visible in piano roll
 
 ## Available MCP Tools
 
@@ -325,11 +351,11 @@ delete_notes([
 ### `clear_queue()`
 Clear all pending requests without affecting the piano roll.
 
-**Use case:** Discard accumulated changes if you don't like the preview.
+**Use case:** Rarely needed in auto mode, but can discard pending requests.
 
 **Example:**
 ```python
-# Made a mistake, clear the queue and start over
+# Clear pending requests
 clear_queue()
 ```
 
@@ -377,14 +403,14 @@ Requests accumulate as a list of actions in `mcp_request.json`:
 ]
 ```
 
-**Processing order:** Actions are executed in order when you click Regenerate.
+**Processing order:** Actions are executed in order when auto-trigger fires.
 
 ## File Locations
 
 **FL Studio scripts directory:**
 ```
 ~/Documents/Image-Line/FL Studio/Settings/Piano roll scripts/
-├── call_llm.pyscript         (copy of bridge script)
+├── ComposeWithLLM.pyscript  (bridge script - auto mode)
 ├── mcp_request.json          (request queue)
 ├── mcp_response.json         (execution results)
 └── piano_roll_state.json     (exported piano roll state)
@@ -392,10 +418,12 @@ Requests accumulate as a list of actions in `mcp_request.json`:
 
 **Source repository:**
 ```
-/Users/calvinw/fl_mcp/
-├── call_llm.pyscript         (source bridge script)
-├── fl_studio_mcp_server.py   (MCP server)
-└── CLAUDE.md                 (this file)
+/Users/calvinw/fl-studio-mcp/
+├── ComposeWithLLM.pyscript      (source bridge script)
+├── fl_studio_mcp_server.py       (MCP server)
+├── fl_studio_auto_trigger.py     (auto-trigger watcher)
+├── setup_auto_trigger.sh         (installation script)
+└── CLAUDE.md                     (this file)
 ```
 
 ## Typical Workflows
@@ -403,7 +431,8 @@ Requests accumulate as a list of actions in `mcp_request.json`:
 ### Building a Chord Progression
 
 ```python
-# Open call_llm script (clears queue, exports state)
+# Initialize: Run ComposeWithLLM in FL Studio
+# Start: python fl_studio_auto_trigger.py
 
 # Send chord progression
 send_notes([
@@ -418,15 +447,12 @@ send_notes([
     {"midi": 72, "duration": 4, "time": 4}
 ])  # F minor
 
-# Click Regenerate to preview
-# Click Accept to commit
+# Notes appear automatically!
 ```
 
 ### Modifying Existing Notes
 
 ```python
-# Open call_llm script (exports current state)
-
 # Get current state
 state = get_piano_roll_state()
 
@@ -436,8 +462,7 @@ delete_notes([{"midi": 67, "time": 0}])
 # Add replacement
 send_notes([{"midi": 69, "duration": 4, "time": 0}])
 
-# Click Regenerate to preview
-# Click Accept to commit
+# Changes appear automatically!
 ```
 
 ### Starting Fresh (Replace Mode)
@@ -450,48 +475,35 @@ send_notes([
     {"midi": 67, "duration": 2, "time": 0}
 ], mode="replace")
 
-# Click Regenerate - old notes gone, new chord appears
-# Click Accept to commit
-```
-
-### Discarding Changes
-
-```python
-# Made some requests but don't like them
-send_notes([...])
-send_notes([...])
-
-# Changed your mind
-clear_queue()
-
-# Start over with new requests
+# Old notes cleared, new chord appears!
 ```
 
 ## Tips
 
 1. **Always specify `time`** - Every note should have an explicit time position
 2. **Use quarter notes** - All time/duration values are in quarter note units
-3. **Preview before committing** - Click Regenerate to see changes before Accept
-4. **Get state first** - Call `get_piano_roll_state()` before making changes
-5. **Clear queue if needed** - Use `clear_queue()` to discard unwanted changes
-6. **Reload script for fresh start** - Close and reopen to reset everything
+3. **Get state first** - Call `get_piano_roll_state()` before making changes
+4. **Refresh after manual edits** - User should press Cmd+Opt+Y to update state
+5. **Auto-trigger must be running** - Remind user to start fl_studio_auto_trigger.py
 
 ## Troubleshooting
 
 **Changes not appearing?**
-- Make sure you clicked "Regenerate" after sending requests
-- Reload the call_llm script to pick up code changes
+- Make sure auto-trigger script is running
+- Verify ComposeWithLLM was run once in FL Studio
+- Check FL Studio window is active
 
 **Notes at wrong positions?**
 - Check PPQ value in state export
 - Ensure time values are in quarter notes, not ticks
 
-**Queue accumulating incorrectly?**
-- Close and reopen script to clear queue
-- Use `clear_queue()` to reset
+**Auto-trigger not working?**
+- Restart auto-trigger script
+- Run ComposeWithLLM in FL Studio again
+- Make sure pynput is installed: `pip install pynput`
 
 **Script not responding?**
-- Check that call_llm.pyscript is copied to Piano roll scripts directory
+- Check that ComposeWithLLM.pyscript is copied to Piano roll scripts directory
 - Verify MCP server is running
 - Restart MCP server after code changes
 

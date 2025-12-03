@@ -1,17 +1,15 @@
 # FL Studio MCP Bridge
 
-An MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with FL Studio's piano roll. Create melodies, chord progressions, and musical patterns through natural language conversation.
+An MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with FL Studio's piano roll. Create melodies, chord progressions, and musical patterns through natural language conversation with **automatic, real-time updates**.
 
 ## Overview
 
-This bridge allows you to:
+Talk to Claude and watch your musical ideas appear instantly in FL Studio:
 - Generate chord progressions by name or custom notes
 - Create melodies and bass lines
 - Modify existing MIDI notes
 - Export and analyze piano roll state
-- Preview changes before committing
-
-The system uses a request queue pattern where changes accumulate and can be previewed before being applied to your FL Studio project.
+- **Zero manual intervention** - notes appear automatically!
 
 ## Prerequisites
 
@@ -51,96 +49,134 @@ Run the installation script to register the MCP server with Claude Code:
 
 This will register the FL Studio MCP server with Claude Code.
 
-### 4. Set Up FL Studio Bridge Script
+### 4. Set Up FL Studio and Auto-Trigger
 
-Copy the bridge script to FL Studio's piano roll scripts directory:
+Run the auto-trigger setup script:
 
 ```bash
-# macOS/Linux
-cp call_llm.pyscript \
-  "$HOME/Documents/Image-Line/FL Studio/Settings/Piano roll scripts/"
-
-# Windows
-copy call_llm.pyscript \
-  "%USERPROFILE%\Documents\Image-Line\FL Studio\Settings\Piano roll scripts\"
+./setup_auto_trigger.sh
 ```
 
-Access in FL Studio: **Tools → Scripting → call_llm**
+This will:
+- Install `pynput` (keyboard automation library)
+- Copy `ComposeWithLLM.pyscript` to FL Studio's scripts directory
+- Create initial JSON communication files
 
-**Note:** Whenever you make changes to the script, re-copy it to the FL Studio directory.
+**Verify installation:**
+```bash
+ls ~/Documents/Image-Line/FL\ Studio/Settings/Piano\ roll\ scripts/
+```
+
+Should show:
+- `ComposeWithLLM.pyscript`
+- `mcp_request.json`
+- `mcp_response.json`
+- `piano_roll_state.json`
 
 ### 5. Restart Claude Code
 
 Restart Claude Code to load the newly registered MCP server.
 
-### 6. Configure Communication Files
-
-The system uses JSON files for communication. By default, they're stored in:
-
-**macOS/Linux:**
-```
-~/Documents/Image-Line/FL Studio/Settings/Piano roll scripts/
-```
-
-**Windows:**
-```
-%USERPROFILE%\Documents\Image-Line\FL Studio\Settings\Piano roll scripts\
-```
-
-The following files will be created automatically:
-- `mcp_request.json` - Request queue
-- `mcp_response.json` - Execution results
-- `piano_roll_state.json` - Exported piano roll state
-
 ## Usage
 
-### Starting a Session
+### Quick Start (Every Session)
 
-1. **Open FL Studio** and create or open a project
-2. **Open the Piano Roll** for any instrument
-3. **Launch the bridge script:**
-   - Go to: **Tools → Scripting → call_llm**
-   - This exports the current state and clears the request queue
+**Step 1: Open FL Studio**
+1. Open FL Studio
+2. Open or create a piano roll
 
-### Working with Your AI Assistant
+**Step 2: Initialize the Script**
 
-Once the bridge is running, you can interact with your AI assistant:
+Run the direct script **once** to set it as the "last script":
 
 ```
-You: "Create a sad chord progression in Am"
+Tools → Scripting → ComposeWithLLM
+```
 
-Claude: [Sends chord progression]
-"I've created an Am-F-C-G progression. Click 'Regenerate' in FL Studio to preview."
+The script will execute instantly (no dialog appears).
 
-You: [Click Regenerate button]
-[Preview the changes]
+**Step 3: Start Auto-Trigger**
+
+Open a terminal and run:
+
+```bash
+cd /path/to/fl-studio-mcp
+python3 fl_studio_auto_trigger.py
+```
+
+You should see:
+```
+🎹 FL Studio MCP Auto-Trigger
+==================================================
+📂 Watching: .../mcp_request.json
+⌨️  Trigger: Cmd+Opt+Y (macOS) / Ctrl+Alt+Y (Windows/Linux)
+🛑 Stop: Press Ctrl+C
+
+✅ Auto-trigger is running...
+💬 Talk to Claude to send notes!
+```
+
+**Leave this terminal window open!**
+
+**Step 4: Talk to Claude**
+
+Now just talk to your AI assistant:
+
+- "Add a C major chord"
+- "Create a sad chord progression in Am"
+- "Add a bass line"
+- "Create a pentatonic melody"
+
+Notes will appear automatically in FL Studio!
+
+### How It Works
+
+```
+You: "Add C major chord"
+    ↓
+Claude → Writes notes to mcp_request.json
+    ↓
+Auto-trigger detects file change → Sends Cmd+Opt+Y
+    ↓
+FL Studio re-runs ComposeWithLLM script
+    ↓
+Script adds notes to piano roll
+    ↓
+Notes appear! (~0.5 seconds)
+```
+
+### Important Tips
+
+#### Refreshing State After Manual Edits
+
+If you manually add/edit notes in FL Studio **between** talking to Claude:
+
+1. Press `Cmd+Opt+Y` (macOS) or `Ctrl+Alt+Y` (Windows/Linux) to refresh the state
+2. Then talk to Claude
+
+This ensures Claude sees your manual changes!
+
+**Example:**
+```
+You: "Add C major chord"
+[Claude adds it automatically ✅]
+
+[You manually add a melody 🎹]
+
+[Press Cmd+Opt+Y to refresh state 🔄]
 
 You: "Add a bass line"
-
-Claude: [Sends bass notes]
-"Added bass notes. Click 'Regenerate' again to hear it."
-
-You: [Click Regenerate]
-[Preview with bass]
-
-You: [If satisfied] Click "Accept"
-[Changes committed to piano roll]
+[Claude sees the chord AND melody ✅]
 ```
-
-### Bridge Script Buttons
-
-- **Regenerate**: Preview all queued changes (doesn't commit)
-- **Accept**: Commit changes to piano roll and close dialog
-- **Close/Cancel**: Discard all pending changes
 
 ### Example Requests
 
 - "Create a I-IV-V-I progression in C major"
 - "Add a pentatonic melody over these chords"
-- "Generate a drum pattern with kick on 1 and 3, snare on 2 and 4"
-- "Change that G note to an A"
 - "Add a bass note on the root of each chord"
+- "Change that G note to an A"
 - "Clear everything and create a jazz progression"
+- "Add some arpeggios starting at beat 4"
 
 ## Available Commands
 
@@ -154,7 +190,7 @@ Your AI assistant has access to these tools:
 
 See [CLAUDE.md](CLAUDE.md) for detailed documentation on how the AI assistant uses these tools.
 
-## How It Works
+## Architecture
 
 ```
 ┌─────────┐         ┌────────────┐         ┌──────────────┐
@@ -163,9 +199,18 @@ See [CLAUDE.md](CLAUDE.md) for detailed documentation on how the AI assistant us
                                            └──────┬───────┘
                                                   │
                                                   ▼
+                                       ┌──────────────────┐
+                                       │ Auto-Trigger     │
+                                       │ Watches File     │
+                                       └────────┬─────────┘
+                                                │
+                                                ▼
+                                       Sends Cmd+Opt+Y
+                                                │
+                                                ▼
 ┌─────────────┐         ┌─────────────────────────────────┐
 │ Piano Roll  │◀────────│ FL Studio Bridge Script         │
-└─────────────┘         │ (reads queue, applies changes)  │
+└─────────────┘         │ (re-runs, applies changes)      │
                         └─────────────────────────────────┘
                                      │
                                      ▼
@@ -177,24 +222,14 @@ See [CLAUDE.md](CLAUDE.md) for detailed documentation on how the AI assistant us
 
 1. AI assistant sends musical requests via MCP tools
 2. MCP server writes requests to JSON queue
-3. User clicks "Regenerate" in FL Studio
-4. Bridge script reads queue and applies changes (preview mode)
-5. User clicks "Accept" to commit or continues making changes
+3. Auto-trigger detects file change
+4. Auto-trigger sends Cmd+Opt+Y to FL Studio
+5. FL Studio re-runs ComposeWithLLM script
+6. Script processes queue and applies changes
+7. Notes appear instantly in piano roll
+8. State is exported for Claude to see
 
 ## Configuration
-
-### Custom File Locations
-
-By default, communication files are stored in FL Studio's scripts directory. To use a different location, edit `fl_studio_mcp_server.py`:
-
-```python
-# Find these lines and update the paths
-BASE_DIR = Path.home() / "Documents/Image-Line/FL Studio/Settings/Piano roll scripts"
-REQUEST_FILE = BASE_DIR / "mcp_request.json"
-STATE_FILE = BASE_DIR / "piano_roll_state.json"
-```
-
-**Important:** If you change these paths, you must also update them in `call_llm.pyscript` to match.
 
 ### Supported Chord Types
 
@@ -211,7 +246,7 @@ The `create_chord_from_name` tool supports:
 **Problem:** Bridge script doesn't show in Tools menu
 
 **Solutions:**
-- Verify the file is in the correct directory (see step 3)
+- Re-run the setup script: `./setup_auto_trigger.sh`
 - Ensure file has `.pyscript` extension
 - Restart FL Studio
 - Check FL Studio version supports Python scripting
@@ -221,10 +256,20 @@ The `create_chord_from_name` tool supports:
 **Problem:** Sent requests but nothing happens
 
 **Solutions:**
-- Make sure you clicked "Regenerate" button
-- Check that MCP server is running
-- Verify file paths in both the MCP server and bridge script match
-- Look at `mcp_request.json` - should contain your requests
+- Make sure auto-trigger script is running (check the terminal)
+- Verify you ran `ComposeWithLLM` once in FL Studio
+- Make sure FL Studio window is active
+- Try pressing Cmd+Opt+Y manually to trigger
+
+### Auto-Trigger Not Working
+
+**Problem:** Terminal shows errors or nothing happens
+
+**Solutions:**
+- Restart the auto-trigger script
+- Run `ComposeWithLLM` in FL Studio again
+- Make sure `pynput` is installed: `pip3 install pynput`
+- Check FL Studio is the active window
 
 ### MCP Server Not Connecting
 
@@ -233,7 +278,8 @@ The `create_chord_from_name` tool supports:
 **Solutions:**
 - Restart your MCP client (Claude Desktop/Code)
 - Verify configuration file has correct path to `fl_studio_mcp_server.py`
-- Ensure virtual environment is created: `uv venv` and dependencies installed: `uv pip install -e .`
+- Ensure virtual environment is created: `uv venv`
+- Ensure dependencies installed: `uv pip install -e .`
 
 ### Notes at Wrong Positions
 
@@ -253,24 +299,45 @@ The `create_chord_from_name` tool supports:
 - Check file permissions (should be read/write)
 - On Windows, may need to run FL Studio as administrator
 
+## File Locations
+
+**FL Studio scripts directory:**
+```
+~/Documents/Image-Line/FL Studio/Settings/Piano roll scripts/
+├── ComposeWithLLM.pyscript  (bridge script - auto mode)
+├── mcp_request.json          (request queue)
+├── mcp_response.json         (execution results)
+└── piano_roll_state.json     (exported piano roll state)
+```
+
+**Source repository:**
+```
+/path/to/fl-studio-mcp/
+├── ComposeWithLLM.pyscript      (source bridge script)
+├── fl_studio_mcp_server.py       (MCP server)
+├── fl_studio_auto_trigger.py     (auto-trigger watcher)
+├── setup_auto_trigger.sh         (installation script)
+├── CLAUDE.md                     (AI assistant documentation)
+└── README.md                     (this file)
+```
+
 ## Development
 
 ### Making Changes
 
 1. Edit files in this repository
-2. Copy updated `call_llm.pyscript` to FL Studio scripts directory
-3. Reload the bridge script in FL Studio
+2. For bridge script changes:
+   ```bash
+   cp ComposeWithLLM.pyscript \
+     ~/Documents/Image-Line/FL\ Studio/Settings/Piano\ roll\ scripts/
+   ```
+3. Run the script once in FL Studio to reload
 
 ### Debugging
 
-Enable debug output by checking the console/terminal where your MCP client is running. The server logs all requests and responses.
-
-## Architecture
-
-- **MCP Server** (`fl_studio_mcp_server.py`) - Exposes tools to AI assistants
-- **Bridge Script** (`call_llm.pyscript`) - Runs inside FL Studio
-- **Communication Files** (JSON) - Request queue and state export
-- **CLAUDE.md** - AI assistant documentation
+- Check the auto-trigger terminal for real-time status
+- Look at `mcp_response.json` for execution results
+- Enable debug output in the MCP server if needed
 
 ## Contributing
 
@@ -290,3 +357,5 @@ For issues, questions, or feature requests, please open an issue on GitHub.
 ## Acknowledgments
 
 Built using the [Model Context Protocol](https://modelcontextprotocol.io/) specification.
+
+Special thanks to the FL Studio and Python communities.
