@@ -55,3 +55,6 @@ piano_roll_state.json
 
 # OS
 Thumbs.db
+
+# Signal directory (local clone, not part of this repo)
+signal/
