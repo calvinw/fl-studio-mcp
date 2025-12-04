@@ -14,7 +14,7 @@ Talk to Claude and watch your musical ideas appear instantly in FL Studio:
 ## Prerequisites
 
 - **FL Studio** (any recent version with Python scripting support)
-- **Python 3.8+**
+- **Python 3.11+** (managed automatically by uv)
 - **MCP-compatible client** (Claude Desktop, Claude Code CLI, or other MCP client)
 - **uv** (Fast Python package manager - [installation guide](https://docs.astral.sh/uv/getting-started/installation/))
 
@@ -27,17 +27,18 @@ git clone https://github.com/calvinw/fl-studio-mcp.git
 cd fl-studio-mcp
 ```
 
-### 2. Set Up Python Environment
+### 2. Install All Dependencies
 
-Create a virtual environment and install dependencies using `uv`:
+Install everything with a single command using `uv sync`:
 
 ```bash
-# Create virtual environment
-uv venv
-
-# Install the project and its dependencies
-uv pip install -e .
+uv sync
 ```
+
+This will:
+- Create a virtual environment with Python 3.11
+- Install all project dependencies (fastmcp, pynput, etc.)
+- Set up the project in editable mode
 
 ### 3. Install the MCP Server
 
@@ -58,9 +59,9 @@ Run the auto-trigger setup script:
 ```
 
 This will:
-- Install `pynput` (keyboard automation library)
 - Copy `ComposeWithLLM.pyscript` to FL Studio's scripts directory
 - Create initial JSON communication files
+- Verify installation
 
 **Verify installation:**
 ```bash
@@ -101,7 +102,7 @@ Open a terminal and run:
 
 ```bash
 cd /path/to/fl-studio-mcp
-python3 fl_studio_auto_trigger.py
+uv run python fl_studio_auto_trigger.py
 ```
 
 You should see:
@@ -268,7 +269,7 @@ The `create_chord_from_name` tool supports:
 **Solutions:**
 - Restart the auto-trigger script
 - Run `ComposeWithLLM` in FL Studio again
-- Make sure `pynput` is installed: `pip3 install pynput`
+- Make sure dependencies are installed: `uv sync`
 - Check FL Studio is the active window
 
 ### MCP Server Not Connecting
@@ -278,8 +279,8 @@ The `create_chord_from_name` tool supports:
 **Solutions:**
 - Restart your MCP client (Claude Desktop/Code)
 - Verify configuration file has correct path to `fl_studio_mcp_server.py`
-- Ensure virtual environment is created: `uv venv`
-- Ensure dependencies installed: `uv pip install -e .`
+- Ensure dependencies are installed: `uv sync`
+- Check that the virtual environment was created in `.venv/`
 
 ### Notes at Wrong Positions
 

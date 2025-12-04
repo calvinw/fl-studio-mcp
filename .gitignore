@@ -58,3 +58,12 @@ Thumbs.db
 
 # Signal directory (local clone, not part of this repo)
 signal/
+
+# Auto-trigger PID file
+.auto_trigger.pid
+
+# uv lock file (can be committed or ignored - ignoring for now)
+uv.lock
+
+# Python version file (managed by uv)
+.python-version
