@@ -437,6 +437,7 @@ Requests accumulate as a list of actions in `mcp_request.json`:
 ├── fl_studio_mcp_server.py       (MCP server)
 ├── fl_studio_auto_trigger.py     (auto-trigger watcher)
 ├── setup_auto_trigger.sh         (installation script)
+├── stop_auto_trigger.sh          (stop auto-trigger)
 └── CLAUDE.md                     (this file)
 ```
 

@@ -292,6 +292,7 @@ See [CLAUDE.md](CLAUDE.md) for detailed documentation on how the AI assistant us
 ├── install_mcp_for_gemini.sh          (register with Gemini CLI)
 ├── install_and_run.sh                 (setup FL Studio & start auto-trigger)
 ├── run_auto_trigger.sh                (start/restart auto-trigger)
+├── stop_auto_trigger.sh               (stop auto-trigger)
 ├── CLAUDE.md                          (AI assistant documentation)
 ├── INSTALL.md                         (detailed installation guide)
 └── README.md                          (this file)

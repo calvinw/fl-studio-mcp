@@ -141,7 +141,7 @@ tail -f /path/to/fl-studio-mcp/auto_trigger.log
 
 **Stop the auto-trigger:**
 ```bash
-pkill -f "fl_studio_auto_trigger.py"
+./stop_auto_trigger.sh
 ```
 
 ## What Gets Installed
@@ -160,6 +160,7 @@ From `pyproject.toml`:
 | `install_mcp_for_gemini.sh` | Register with Gemini CLI | Once (optional) |
 | `install_and_run.sh` | Setup FL Studio & start auto-trigger | First time, or to restart auto-trigger |
 | `run_auto_trigger.sh` | Just start/restart the auto-trigger | Anytime you need to restart it |
+| `stop_auto_trigger.sh` | Stop the auto-trigger | When you want to stop the watcher |
 
 All scripts are:
 - ✅ **Idempotent** - Safe to run multiple times
