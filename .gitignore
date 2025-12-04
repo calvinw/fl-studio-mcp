@@ -40,6 +40,11 @@ env/
 # Claude Code
 .claude/
 
+# Gemini CLI
+.gemini/
+settings.json
+gemini_mcp_config.json
+
 # FL Studio MCP Communication Files
 # Note: These are created dynamically in the FL Studio scripts directory
 # and should not be tracked in the repository

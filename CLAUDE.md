@@ -1,5 +1,9 @@
 # FL Studio Direct Integration - Documentation
 
+## Platform Support
+
+**⚠️ macOS Only** - This project currently only supports macOS. The auto-trigger system uses AppleScript to send keystrokes to FL Studio.
+
 ## Overview
 
 This system allows Claude to interact with FL Studio's piano roll through direct file-based communication. It provides automatic, seamless integration between Claude's AI capabilities and FL Studio's music production environment.
@@ -10,29 +14,37 @@ If you're an LLM helping the user with this system, here's what you need to know
 
 ### 1. Check Available Tools
 
-First, verify you have access to these MCP tools (they'll have the `mcp__fl-studio__` prefix):
-- `mcp__fl-studio__get_piano_roll_state`
-- `mcp__fl-studio__send_notes`
-- `mcp__fl-studio__create_chord_from_name`
-- `mcp__fl-studio__delete_notes`
-- `mcp__fl-studio__clear_queue`
+First, verify you have access to these MCP tools (they'll have the `mcp__fl_studio_mcp__` prefix):
+- `mcp__fl_studio_mcp__get_piano_roll_state` - Read the piano roll
+- `mcp__fl_studio_mcp__send_notes` - Add or replace notes (including chords)
+- `mcp__fl_studio_mcp__delete_notes` - Remove specific notes
+- `mcp__fl_studio_mcp__clear_queue` - Clear pending requests
 
-If these aren't available, the MCP server needs to be started or reconnected.
+If these aren't available, the MCP server needs to be started or reconnected. The server is registered as `fl-studio-mcp` in Claude Code.
 
 ### 2. Understand the User Workflow
 
-The user will:
-1. **Run ComposeWithLLM** in FL Studio's piano roll (Tools → Scripting → ComposeWithLLM) ONCE to initialize
-2. **Start the auto-trigger watcher** (python fl_studio_auto_trigger.py) in a terminal
-3. **Tell you what they want** (add chords, modify notes, create progressions, etc.)
-4. **Notes appear automatically** - no buttons to click!
+Installation (one-time):
+1. **Run `./install_prerequisites.sh`** to install uv and Python environment
+2. **Run `./install_mcp_for_claude.sh`** to register the MCP server
+3. **Run `./install_and_run.sh`** to setup FL Studio and start auto-trigger
+
+Then for each session:
+1. **Open FL Studio** and open a piano roll
+2. **Detach the piano roll window** (required for auto-trigger to work)
+3. **Run ComposeWithLLM** once (Tools → Scripting → ComposeWithLLM) to initialize
+4. **Auto-trigger is already running in background** (started by `install_and_run.sh`)
+5. **Tell you what they want** (add chords, modify notes, create progressions, etc.)
+6. **Notes appear automatically** - no buttons to click!
+
+**Note:** Terminal and Claude Code need Accessibility permissions (System Settings → Privacy & Security → Accessibility) to send keystrokes to FL Studio.
 
 ### 3. Always Start With State
 
 Before making ANY changes, get the current piano roll state:
 
 ```python
-state = mcp__fl-studio__get_piano_roll_state()
+state = mcp__fl_studio_mcp__get_piano_roll_state()
 ```
 
 This tells you:
@@ -58,8 +70,8 @@ This tells you:
 
 **Chords Are Just Multiple Notes:**
 - A chord = multiple notes with the same `time` value
-- You can use `create_chord_from_name` for convenience
-- Or `send_notes` with same time for all notes
+- Send them all in one `send_notes` call with matching times
+- For example: C major = MIDI 60, 64, 67 all at same time
 
 ### 5. Common Interaction Patterns
 
@@ -68,22 +80,22 @@ This tells you:
 # User: "Add a I-IV-V progression in C"
 
 # Start by getting state (good practice)
-state = mcp__fl-studio__get_piano_roll_state()
+state = mcp__fl_studio_mcp__get_piano_roll_state()
 
 # Send each chord
-mcp__fl-studio__send_notes([
+mcp__fl_studio_mcp__send_notes([
     {"midi": 60, "duration": 4, "time": 0},
     {"midi": 64, "duration": 4, "time": 0},
     {"midi": 67, "duration": 4, "time": 0}
 ], mode="add")  # C major
 
-mcp__fl-studio__send_notes([
+mcp__fl_studio_mcp__send_notes([
     {"midi": 65, "duration": 4, "time": 4},
     {"midi": 69, "duration": 4, "time": 4},
     {"midi": 72, "duration": 4, "time": 4}
 ], mode="add")  # F major
 
-mcp__fl-studio__send_notes([
+mcp__fl_studio_mcp__send_notes([
     {"midi": 67, "duration": 4, "time": 8},
     {"midi": 71, "duration": 4, "time": 8},
     {"midi": 74, "duration": 4, "time": 8}
@@ -97,14 +109,14 @@ mcp__fl-studio__send_notes([
 # User: "Change that G note to an A"
 
 # Get state to see what's there
-state = mcp__fl-studio__get_piano_roll_state()
+state = mcp__fl_studio_mcp__get_piano_roll_state()
 
 # Find the G note in the state (look for number: 67)
 # Delete it
-mcp__fl-studio__delete_notes([{"midi": 67, "time": 0}])
+mcp__fl_studio_mcp__delete_notes([{"midi": 67, "time": 0}])
 
 # Add replacement
-mcp__fl-studio__send_notes([{"midi": 69, "duration": 4, "time": 0}])
+mcp__fl_studio_mcp__send_notes([{"midi": 69, "duration": 4, "time": 0}])
 
 # Changes appear automatically!
 ```
@@ -114,7 +126,7 @@ mcp__fl-studio__send_notes([{"midi": 69, "duration": 4, "time": 0}])
 # User: "Clear everything and give me a C major scale"
 
 # Use replace mode to clear and add
-mcp__fl-studio__send_notes([
+mcp__fl_studio_mcp__send_notes([
     {"midi": 60, "duration": 0.5, "time": 0},   # C
     {"midi": 62, "duration": 0.5, "time": 0.5}, # D
     {"midi": 64, "duration": 0.5, "time": 1},   # E
@@ -140,7 +152,7 @@ mcp__fl-studio__send_notes([
 # User presses the key combo
 
 # Get updated state
-state = mcp__fl-studio__get_piano_roll_state()
+state = mcp__fl_studio_mcp__get_piano_roll_state()
 
 # Now you can see the manual edits
 ```
@@ -167,6 +179,8 @@ state = mcp__fl-studio__get_piano_roll_state()
 **User says "Nothing happened"**
 - Ask: "Is the auto-trigger script running in the terminal?"
 - Ask: "Did you run ComposeWithLLM in FL Studio first?"
+- Ask: "Is the piano roll window detached?"
+- Ask: "Does Terminal/Claude have Accessibility permissions?" (System Settings → Privacy & Security → Accessibility)
 - Suggest: "Try pressing Cmd+Opt+Y manually to refresh"
 
 **User says "It replaced everything"**

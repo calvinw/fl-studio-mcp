@@ -66,8 +66,14 @@ def send_trigger():
 
     print(f"   🎹 Triggering FL Studio via menu click...")
 
-    # AppleScript to activate detached piano roll window and send keystroke
+    # AppleScript to save focus, trigger FL Studio, then restore focus
     applescript = '''
+    -- Save the current frontmost application
+    tell application "System Events"
+        set originalApp to name of first application process whose frontmost is true
+    end tell
+
+    -- Trigger FL Studio
     tell application "System Events"
         tell process "OsxFL"
             set frontmost to true
@@ -79,6 +85,10 @@ def send_trigger():
             keystroke "y" using {command down, option down}
         end tell
     end tell
+
+    -- Wait for FL Studio to process, then restore focus
+    delay 0.5
+    tell application originalApp to activate
     '''
 
     try:

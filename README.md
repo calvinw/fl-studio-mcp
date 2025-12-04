@@ -1,6 +1,6 @@
-# FL Studio MCP Bridge
+# FL Studio MCP Bridge (macOS)
 
-An MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with FL Studio's piano roll. Create melodies, chord progressions, and musical patterns through natural language conversation with **automatic, real-time updates**.
+An MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with FL Studio's piano roll on **macOS**. Create melodies, chord progressions, and musical patterns through natural language conversation with **automatic, real-time updates**.
 
 ## Overview
 
@@ -11,72 +11,60 @@ Talk to Claude and watch your musical ideas appear instantly in FL Studio:
 - Export and analyze piano roll state
 - **Zero manual intervention** - notes appear automatically!
 
+## Platform Support
+
+**⚠️ macOS Only** - This project currently only supports macOS. The auto-trigger system uses AppleScript to send keystrokes to FL Studio, which is a macOS-specific technology.
+
 ## Prerequisites
 
+- **macOS** (required for AppleScript-based auto-trigger)
 - **FL Studio** (any recent version with Python scripting support)
 - **Python 3.11+** (managed automatically by uv)
 - **MCP-compatible client** (Claude Desktop, Claude Code CLI, or other MCP client)
 - **uv** (Fast Python package manager - [installation guide](https://docs.astral.sh/uv/getting-started/installation/))
 
+### macOS Accessibility Permissions
+
+The auto-trigger needs permission to send keystrokes to FL Studio. You must enable Accessibility access for **Terminal** (or your terminal app) and **Claude Code** (if using Claude Code CLI):
+
+1. Open **System Settings** → **Privacy & Security** → **Accessibility**
+2. Click the **+** button to add applications
+3. Add **Terminal** (or iTerm, Warp, etc.)
+4. Add **Claude** (Claude Code CLI) if you're using it
+5. Ensure the toggles are **enabled** for each app
+
+Without these permissions, the auto-trigger cannot send the Cmd+Opt+Y keystroke to FL Studio.
+
 ## Installation
 
-### 1. Clone or Download This Repository
+### Quick Start (3 Commands)
 
 ```bash
 git clone https://github.com/calvinw/fl-studio-mcp.git
 cd fl-studio-mcp
+
+./install_prerequisites.sh    # Install uv and Python
+./install_mcp_for_claude.sh   # Register the mcp with Claude Code
+./install_and_run.sh          # Setup FL Studio and start auto-trigger
 ```
 
-### 2. Install All Dependencies
+**Then restart Claude Code and you're ready to go!**
 
-Install everything with a single command using `uv sync`:
+### Detailed Installation
 
-```bash
-uv sync
-```
+See [INSTALL.md](INSTALL.md) for comprehensive setup instructions including:
+- Step-by-step installation for prerequisites
+- Claude Code registration
+- Gemini CLI registration (optional)
+- FL Studio setup
+- Auto-trigger management
 
-This will:
-- Create a virtual environment with Python 3.11
-- Install all project dependencies (fastmcp, pynput, etc.)
-- Set up the project in editable mode
+### What Gets Installed
 
-### 3. Install the MCP Server
-
-Run the installation script to register the MCP server with Claude Code:
-
-```bash
-./install_fl_studio_mcp_server.sh
-```
-
-This will register the FL Studio MCP server with Claude Code.
-
-### 4. Set Up FL Studio and Auto-Trigger
-
-Run the auto-trigger setup script:
-
-```bash
-./setup_auto_trigger.sh
-```
-
-This will:
-- Copy `ComposeWithLLM.pyscript` to FL Studio's scripts directory
-- Create initial JSON communication files
-- Verify installation
-
-**Verify installation:**
-```bash
-ls ~/Documents/Image-Line/FL\ Studio/Settings/Piano\ roll\ scripts/
-```
-
-Should show:
-- `ComposeWithLLM.pyscript`
-- `mcp_request.json`
-- `mcp_response.json`
-- `piano_roll_state.json`
-
-### 5. Restart Claude Code
-
-Restart Claude Code to load the newly registered MCP server.
+From `pyproject.toml`:
+- **fastmcp** - MCP server framework
+- **pynput** - Keyboard automation (for auto-trigger)
+- **Python 3.11+** - Managed automatically by `uv`
 
 ## Usage
 
@@ -85,41 +73,33 @@ Restart Claude Code to load the newly registered MCP server.
 **Step 1: Open FL Studio**
 1. Open FL Studio
 2. Open or create a piano roll
+3. **Detach the piano roll window** (click the detach icon or drag it out) - this is required for the auto-trigger to work properly
 
 **Step 2: Initialize the Script**
 
-Run the direct script **once** to set it as the "last script":
+Run the script **once** to initialize the system:
 
 ```
 Tools → Scripting → ComposeWithLLM
 ```
 
-The script will execute instantly (no dialog appears).
+This sets up the piano roll state and clears the request queue (no dialog appears).
 
-**Step 3: Start Auto-Trigger**
+**Step 3: Auto-Trigger is Already Running**
 
-Open a terminal and run:
+After installation, the auto-trigger watcher runs in the background automatically.
 
+To verify it's running:
 ```bash
-cd /path/to/fl-studio-mcp
-uv run python fl_studio_auto_trigger.py
+ps aux | grep "fl_studio_auto_trigger.py" | grep -v grep
 ```
 
-You should see:
-```
-🎹 FL Studio MCP Auto-Trigger
-==================================================
-📂 Watching: .../mcp_request.json
-⌨️  Trigger: Cmd+Opt+Y (macOS) / Ctrl+Alt+Y (Windows/Linux)
-🛑 Stop: Press Ctrl+C
-
-✅ Auto-trigger is running...
-💬 Talk to Claude to send notes!
+If it's not running:
+```bash
+./run_auto_trigger.sh
 ```
 
-**Leave this terminal window open!**
-
-**Step 4: Talk to Claude**
+**Step 4: Talk to Claude or Gemini**
 
 Now just talk to your AI assistant:
 
@@ -128,7 +108,7 @@ Now just talk to your AI assistant:
 - "Add a bass line"
 - "Create a pentatonic melody"
 
-Notes will appear automatically in FL Studio!
+Notes will appear automatically in FL Studio! (~0.5 seconds)
 
 ### How It Works
 
@@ -152,7 +132,7 @@ Notes appear! (~0.5 seconds)
 
 If you manually add/edit notes in FL Studio **between** talking to Claude:
 
-1. Press `Cmd+Opt+Y` (macOS) or `Ctrl+Alt+Y` (Windows/Linux) to refresh the state
+1. Press `Cmd+Opt+Y` (macOS) or `Ctrl+Alt+Y` (Windows) to refresh the state
 2. Then talk to Claude
 
 This ensures Claude sees your manual changes!
@@ -179,15 +159,14 @@ You: "Add a bass line"
 - "Clear everything and create a jazz progression"
 - "Add some arpeggios starting at beat 4"
 
-## Available Commands
+## Available Tools
 
-Your AI assistant has access to these tools:
+Your AI assistant has access to these MCP tools:
 
-- `get_piano_roll_state()` - Read current notes
-- `send_notes(notes, mode)` - Add/replace notes
-- `create_chord_from_name(chord_name, root_note, ...)` - Create chord by name
+- `get_piano_roll_state()` - Read current piano roll state
+- `send_notes(notes, mode)` - Add or replace notes (chords are just multiple notes with the same time)
 - `delete_notes(notes)` - Remove specific notes
-- `clear_queue()` - Discard pending changes
+- `clear_queue()` - Discard pending requests
 
 See [CLAUDE.md](CLAUDE.md) for detailed documentation on how the AI assistant uses these tools.
 
@@ -230,16 +209,6 @@ See [CLAUDE.md](CLAUDE.md) for detailed documentation on how the AI assistant us
 7. Notes appear instantly in piano roll
 8. State is exported for Claude to see
 
-## Configuration
-
-### Supported Chord Types
-
-The `create_chord_from_name` tool supports:
-- Basic: `major`, `minor`, `dim`, `aug`
-- Seventh: `maj7`, `min7`, `dom7`
-- Suspended: `sus2`, `sus4`
-- Extended: `maj9`, `min9`
-
 ## Troubleshooting
 
 ### Script Not Appearing in FL Studio
@@ -270,7 +239,8 @@ The `create_chord_from_name` tool supports:
 - Restart the auto-trigger script
 - Run `ComposeWithLLM` in FL Studio again
 - Make sure dependencies are installed: `uv sync`
-- Check FL Studio is the active window
+- Ensure the piano roll is **detached** (not docked inside FL Studio)
+- Check that Terminal/Claude has **Accessibility permissions** (System Settings → Privacy & Security → Accessibility)
 
 ### MCP Server Not Connecting
 
@@ -314,12 +284,17 @@ The `create_chord_from_name` tool supports:
 **Source repository:**
 ```
 /path/to/fl-studio-mcp/
-├── ComposeWithLLM.pyscript      (source bridge script)
-├── fl_studio_mcp_server.py       (MCP server)
-├── fl_studio_auto_trigger.py     (auto-trigger watcher)
-├── setup_auto_trigger.sh         (installation script)
-├── CLAUDE.md                     (AI assistant documentation)
-└── README.md                     (this file)
+├── ComposeWithLLM.pyscript           (source bridge script)
+├── fl_studio_mcp_server.py            (MCP server)
+├── fl_studio_auto_trigger.py          (auto-trigger watcher)
+├── install_prerequisites.sh           (install uv & Python environment)
+├── install_mcp_for_claude.sh          (register with Claude Code)
+├── install_mcp_for_gemini.sh          (register with Gemini CLI)
+├── install_and_run.sh                 (setup FL Studio & start auto-trigger)
+├── run_auto_trigger.sh                (start/restart auto-trigger)
+├── CLAUDE.md                          (AI assistant documentation)
+├── INSTALL.md                         (detailed installation guide)
+└── README.md                          (this file)
 ```
 
 ## Development
