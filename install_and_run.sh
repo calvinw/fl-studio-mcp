@@ -26,14 +26,58 @@ echo "  PART 1: Installing MCP Server"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo
 
-# Check if virtual environment exists
-if [ ! -f "$VENV_PYTHON" ]; then
-    echo "❌ Virtual environment not found at $VENV_PYTHON"
-    echo "📦 Please run: uv sync"
-    exit 1
+# Check if uv is installed, install if needed
+if ! command -v uv &> /dev/null; then
+    echo "📦 uv not found, installing automatically..."
+
+    # Detect OS
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        echo "   Detected macOS, installing uv..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # Linux
+        echo "   Detected Linux, installing uv..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "win32" ]]; then
+        # Windows
+        echo "   Detected Windows, installing uv..."
+        powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+    else
+        echo "❌ Unsupported OS: $OSTYPE"
+        echo "   Please install uv manually: https://docs.astral.sh/uv/"
+        exit 1
+    fi
+
+    # Add uv to PATH for current session
+    export PATH="$HOME/.cargo/bin:$PATH"
+
+    # Verify installation
+    if ! command -v uv &> /dev/null; then
+        echo "❌ uv installation failed"
+        echo "   Please install manually: https://docs.astral.sh/uv/"
+        exit 1
+    fi
+
+    echo "✅ uv installed successfully"
+else
+    echo "✅ uv is already installed"
 fi
 
-echo "✅ Virtual environment found"
+# Check if virtual environment exists, create if needed
+if [ ! -f "$VENV_PYTHON" ]; then
+    echo "📦 Virtual environment not found, creating with uv sync..."
+
+    # Run uv sync to create venv and install dependencies
+    if uv sync; then
+        echo "✅ Virtual environment created successfully"
+    else
+        echo "❌ Failed to create virtual environment"
+        exit 1
+    fi
+else
+    echo "✅ Virtual environment found"
+fi
 
 # Check if server script exists
 if [ ! -f "$SERVER_SCRIPT" ]; then
