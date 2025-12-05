@@ -2,8 +2,8 @@
 
 An MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with FL Studio's piano roll on **macOS**. Create melodies, chord progressions, and musical patterns through natural language conversation with **automatic, real-time updates**.
 
-See the video here:
-[Claude Code and FL Studio Piano Roll (MacOs Version)](https://youtu.be/IbjqLRPr-Fg)
+See the playlist here:
+[LLMs and FL Studio Piano Roll (MacOs Version)](https://youtube.com/playlist?list=PL3miIiuTRI6fgugjvJhGsXoe_oX65-o0S&si=X68d7kPWanyCq9m4)
 
 ## Overview
 
@@ -339,4 +339,5 @@ For issues, questions, or feature requests, please open an issue on GitHub.
 Built using the [Model Context Protocol](https://modelcontextprotocol.io/) specification.
 
 Special thanks to the FL Studio and Python communities.
+
 
