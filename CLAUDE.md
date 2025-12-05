@@ -198,6 +198,10 @@ state = mcp__fl_studio_mcp__get_piano_roll_state()
 
 When helping with music:
 - **MIDI note numbers**: C4 (middle C) = 60, each semitone = +1
+- **FL Studio Octave Display**: FL Studio displays notes ONE OCTAVE HIGHER than standard MIDI convention. When you send MIDI 60 (C4 in standard), FL Studio shows it as C5. Use this reference:
+  - MIDI 60 = C4 (standard) = **C5 in FL Studio**
+  - MIDI 69 = A4 (standard) = **A5 in FL Studio**
+  - MIDI 72 = C5 (standard) = **C6 in FL Studio**
 - **Common durations**: 0.25=16th, 0.5=8th, 1=quarter, 2=half, 4=whole
 - **Chord voicings**: Consider inversions for smoother voice leading
 - **Bass notes**: Typically 1-2 octaves below the chord (MIDI 36-48 range)
